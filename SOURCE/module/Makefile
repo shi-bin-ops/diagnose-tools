@@ -218,7 +218,7 @@ ifneq ($(KERNELRELEASE),)
 else
     include ${shell pwd}/../../vender/module.mk
     ifeq ($(KERNEL_BUILD_PATH),)
-        KERNEL_BUILD_PATH=/lib/modules/$(shell uname -r)/build
+        KERNEL_BUILD_PATH=/lib/modules/$(UNAME)/build
     endif
     MOD_PATH := $(shell pwd)
     default:
