@@ -2,6 +2,7 @@
 CWD = $(shell pwd)
 ARCH := $(shell uname -i)
 UNAME_A := $(shell uname -a)
+UNAME :=$(shell uname -r)
 
 ifeq ($(JOBS),)
 	JOBS := $(shell grep -c ^processor /proc/cpuinfo 2>/dev/null)
@@ -33,19 +34,30 @@ ifneq ($(findstring Ubuntu,$(UNAME_A) $(shell test -e /etc/os-release && head -1
 	apt -y install bash-completion # git自动补全
 	apt -y install --no-install-recommends openjdk-8-jdk
 else
-	yum install -y gcc
-	yum install -y gcc-c++
-	yum install -y libstdc++-static
-	yum install -y glibc-static
-	yum install -y zlib-devel
-	yum install -y zlib-static
-	yum install -y libunwind
-	yum install -y libunwind-devel
-	yum install -y elfutils-libelf-devel
-	yum install -y java-1.7.0-openjdk-devel
-	yum install -y rpm-build
-	yum install -y xz-libs
-	yum install -y xz-devel
+	centos_ver="`cat /etc/centos-release| awk '{print $4}'| awk -F'.' '{print $1}'`" 
+	if [ $centos_vere -eq 7 ];then 
+		yum install -y gcc
+		yum install -y gcc-c++
+		yum install -y libstdc++-static
+		yum install -y glibc-static
+		yum install -y zlib-devel
+		yum install -y zlib-static
+		yum install -y libunwind
+		yum install -y libunwind-devel
+		yum install -y elfutils-libelf-devel
+		yum install -y java-1.7.0-openjdk-devel
+		yum install -y rpm-build
+		yum install -y xz-libs
+		yum install -y xz-devel
+	else	#兼容CentOS8: 
+		dnf --enablerepo=PowerTools install glibc-static -y
+		dnf --enablerepo=PowerTools install libstdc++-static  -y
+		dnf --enablerepo=PowerTools install zlib-static  -y
+		yum install -y gcc gcc-c++ zlib-devel
+		yum install -y libunwind libunwind-devel 
+		yum install -y elfutils-libelf-devel rpm-build xz-libs xz-devel 
+		yum install java-1.8.0-openjdk  java-1.8.0-openjdk-devel
+	endif
 endif
 	sh ./vender/devel.sh
 
@@ -60,15 +72,15 @@ deps:
 .PHONY: deps
 
 module:
-	cd SOURCE/module; make --jobs=${JOBS}
-	mkdir -p build/lib/`uname -r`/
-	/bin/cp -f SOURCE/module/diagnose.ko build/lib/`uname -r`/
+	cd SOURCE/module; make --jobs=${JOBS}  ARCH=$(ARCH) UNAME=$(UNAME) 
+	mkdir -p build/lib/$(UNAME)/
+	/bin/cp -f SOURCE/module/diagnose.ko build/lib/$(UNAME)/
 
 tools:
 	cd SOURCE/diagnose-tools; make clean; VENDER_LDFLAGS="${VENDER_LDFLAGS}" make --jobs=${JOBS}
 
 java_agent:
-	cd SOURCE/diagnose-tools/java_agent; make --jobs=${JOBS}
+	cd SOURCE/diagnose-tools/java_agent; make --jobs=${JOBS}  ARCH=$(ARCH) UNAME=$(UNAME)
 
 pkg:
 	cd rpmbuild; sh rpmbuild.sh
